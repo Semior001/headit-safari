@@ -1,0 +1,16 @@
+version: '3'
+
+tasks:
+  build/extension/debug:
+    silent: true
+    dir: extension
+    vars:
+      ARTIFACTS_DIR: ../build/artifacts/extension
+      TARGET: ../build
+    cmds:
+      - rm -rf {{.TARGET}}
+      - mkdir -p {{.ARTIFACTS_DIR}}
+      - xcodebuild -scheme headit -configuration Debug -target headit -archivePath {{.ARTIFACTS_DIR}}/extension.xcarchive archive
+      - xcodebuild -exportArchive -archivePath {{.ARTIFACTS_DIR}}/extension.xcarchive -exportOptionsPlist 'headit Extension/Info.plist' -exportPath {{.ARTIFACTS_DIR}}
+      - cp -r {{.ARTIFACTS_DIR}}/headit.app {{.TARGET}}
+
