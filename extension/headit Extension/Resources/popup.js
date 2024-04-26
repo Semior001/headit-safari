@@ -1,6 +1,7 @@
 const Header = class {
-    constructor(updateDataCallback, key, value, enabled) {
+    constructor(updateDataCallback, host, key, value, enabled) {
         this.updateData = updateDataCallback;
+        this.host = host;
         this.key = key;
         this.value = value;
         this.enabled = enabled;
@@ -56,70 +57,130 @@ const Header = class {
     }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    let headers = [];
-    const container = document.getElementById('headersList');
-
-    let render = () => {};
-    let update = () => {
-        localStorage.setItem('headers', JSON.stringify(headers));
-    };
-
-    let defaultChecked = (setv) => {
-        if (setv != null) {
-            localStorage.setItem('defaultChecked', JSON.stringify(setv));
-        }
-
-        let defaultChecked = false;
-        const defCheckedStr = localStorage.getItem('defaultChecked');
-        if (defCheckedStr != null && defCheckedStr !== '') {
-            defaultChecked = JSON.parse(defCheckedStr);
-        }
-        return defaultChecked
+function getPort() {
+    let port = localStorage.getItem('port');
+    if (port === null || port === '') {
+        return '9096';
     }
+    return port;
+}
 
-    render = () => {
-        container.innerHTML = '';
-        headers.forEach((header, idx) => {
+function getDefaultChecked() {
+    return localStorage.getItem('defaultChecked') === 'true';
+}
+
+function loadRules(cb) {
+    let rules = localStorage.getItem('rules');
+    if (rules === null) {
+        return [];
+    }
+    return JSON.parse(rules).map((rule) => {
+        return new Header(cb, rule.host, rule.key, rule.value, rule.enabled);
+    });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    let rules = [];
+    let currentPageHost = '';
+    browser.tabs.query({active: true, currentWindow: true}, (tabs) => {
+        currentPageHost = new URL(tabs[0].url).hostname;
+        console.log("[DEBUG] current page host", currentPageHost);
+        render();
+    });
+
+    const containerElem = document.getElementById('headersList');
+    const addRowElem = document.getElementById('addRow');
+    const portElem = document.getElementById('port');
+    const toggleAllElem = document.getElementById('toggleAll');
+
+    let render = () => {
+        containerElem.innerHTML = ''
+        rules.forEach((rule, idx) => {
+            if (rule.host !== currentPageHost) {
+                return;
+            }
+
+            console.log("[DEBUG] rendering rule", idx, rule);
+
             const btn = document.createElement('button');
             btn.textContent = 'Remove';
             btn.addEventListener('click', () => {
-                console.log("[DEBUG] deleting header", idx, header);
-                headers.splice(idx, 1);
+                console.log("[DEBUG] deleting rule", idx, rule);
+                rules.splice(idx, 1);
                 render(); update();
             })
 
-            const row = header.row();
+            const row = rule.row();
             const cell = document.createElement('td');
             cell.appendChild(btn);
             row.appendChild(cell);
 
-            container.appendChild(row);
+            containerElem.appendChild(row);
         });
     }
 
-    document.getElementById('addRow').addEventListener('click', () => {
-        console.log("[DEBUG] adding element", headers.length)
-        headers.push(new Header(update, '', '', defaultChecked(null)));
+    let update = () => {
+        localStorage.setItem('rules', JSON.stringify(rules));
+
+        let hosts = {};
+        for (let i = 0; i < rules.length; i++) {
+            if (!rules[i].enabled) {
+                continue;
+            }
+            if (hosts[rules[i].host] === undefined) {
+                hosts[rules[i].host] = {};
+            }
+            hosts[rules[i].host][rules[i].key] = rules[i].value;
+        }
+
+        let req = [];
+        for (let host in hosts) {
+            req.push({host: host, add_headers: hosts[host]});
+        }
+
+        if (req.length === 0) {
+            return;
+        }
+
+        fetch(`http://localhost:${getPort()}/rules`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(req)
+        }).then((response) => {
+            response.text().then((data) => {
+                console.log("[DEBUG] response", data);
+            });
+        }).catch((error) => {
+            console.log("[ERROR] update error", error);
+        });
+    };
+
+    addRowElem.addEventListener('click', () => {
+        console.log("[DEBUG] adding element", rules.length)
+        rules.push(new Header(update, currentPageHost, '', '', getDefaultChecked()));
         render(); update();
     });
 
-    const result = localStorage.getItem('headers');
-    if (result != null && result !== '') {
-        const savedHeaders = JSON.parse(result);
-        headers = savedHeaders.map(h => new Header(update, h.key, h.value, h.enabled));
-    }
-    console.log("[DEBUG] loaded headers from local storage:", headers);
-    render();
+    portElem.addEventListener('input', (e) => {
+        console.log("[DEBUG] port change", e.target.value);
+        localStorage.setItem('port', e.target.value);
+    });
 
-    const toggleAll = document.getElementById('toggleAll');
-    toggleAll.addEventListener('change', (e) => {
+    toggleAllElem.addEventListener('change', (e) => {
         console.log("[DEBUG] toggle all", e.target.checked);
-        for (let i = 0; i < headers.length; i++) {
-            headers[i].enabled = e.target.checked;
+        for (let i = 0; i < rules.length; i++) {
+            rules[i].enabled = e.target.checked;
         }
         render(); update();
-        defaultChecked(e.target.checked);
+        localStorage.setItem('defaultChecked', e.target.checked);
     });
-    toggleAll.checked = defaultChecked(null);
+
+    // setup
+    portElem.value = getPort();
+    toggleAllElem.checked = getDefaultChecked();
+    rules = loadRules(update);
+
+    console.log("[DEBUG] api server port: ", getPort());
+    console.log("[DEBUG] check by default: ", getDefaultChecked());
+    console.log("[DEBUG] headers: ", rules);
 })

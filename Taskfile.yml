@@ -1,6 +1,9 @@
 version: '3'
 
 tasks:
+  install:
+
+
   build/extension/debug:
     silent: true
     dir: extension

@@ -1,15 +1,16 @@
 ### Set "X-Test-Header: 12345" to all requests
-POST localhost:9096
+POST localhost:9096/rules
 Content-Type: application/json
 
-{
-  "rules": [{
+[{
     "base_url": "admin-dev.cp.sbercloud.dev",
     "add_headers": {
       "X-Test-Header": "12345"
     }
   }]
-}
 
 ### Check result
+GET localhost:9096/rules
+
+### Check
 GET https://echo.free.beeceptor.com
