@@ -6,22 +6,14 @@
     <script type="module" src="popup.js"></script>
 </head>
 <body>
-<table style="border: 1px solid black">
-    <thead>
-    <tr>
-        <th><input id="toggleAll" type="checkbox"></th>
-        <th>Key</th>
-        <th>Value</th>
-        <th>Action</th>
-    </tr>
-    </thead>
-    <tbody id="headersList"></tbody>
+<table>
+    <tbody style="border: 0">
+        <tr><td colspan="2"><textarea id="headers" cols="30" rows="10"></textarea></td></tr>
+        <tr>
+            <td>port:</td>
+            <td><input id="port" type="number" style="margin-left: 5px; width: 50px"></td>
+        </tr>
+    </tbody>
 </table>
-<div style="margin-top: 5px; margin-left: 5px">
-    <button id="addRow">Add Header</button>
-    <div style="display: inline-block; margin-left: 10px">
-        port: <input id="port" type="number" style="margin-left: 5px; width: 50px">
-    </div>
-</div>
 </body>
 </html>

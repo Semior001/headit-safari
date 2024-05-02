@@ -1,62 +1,3 @@
-const Header = class {
-    constructor(updateDataCallback, host, key, value, enabled) {
-        this.updateData = updateDataCallback;
-        this.host = host;
-        this.key = key;
-        this.value = value;
-        this.enabled = enabled;
-    }
-
-    row() {
-        const row = document.createElement('tr');
-        row.appendChild(this.checkboxCell());
-        row.appendChild(this.keyCell());
-        row.appendChild(this.valueCell());
-        return row;
-    }
-
-    checkboxCell() {
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.checked = this.enabled;
-        cb.addEventListener('change', (e) => {
-            console.log("[DEBUG] checked change on checkbox of header", this, e);
-            this.enabled = e.target.checked;
-            this.updateData();
-        });
-
-        const cell = document.createElement('td');
-        cell.appendChild(cb);
-        return cell;
-    }
-
-    keyCell() {
-        const inp = document.createElement('input');
-        inp.value = this.key;
-        inp.addEventListener('input', (e) => {
-            this.key = e.target.value;
-            this.updateData();
-        });
-
-        const cell = document.createElement('td');
-        cell.appendChild(inp);
-        return cell;
-    }
-
-    valueCell() {
-        const inp = document.createElement('input');
-        inp.value = this.value;
-        inp.addEventListener('input', (e) => {
-            this.value = e.target.value;
-            this.updateData();
-        });
-
-        const cell = document.createElement('td');
-        cell.appendChild(inp);
-        return cell
-    }
-}
-
 function getPort() {
     let port = localStorage.getItem('port');
     if (port === null || port === '') {
@@ -69,32 +10,37 @@ function getDefaultChecked() {
     return localStorage.getItem('defaultChecked') === 'true';
 }
 
-function loadRules(cb) {
+function loadRules() {
     let rules = localStorage.getItem('rules');
     if (rules === null) {
         return [];
     }
     return JSON.parse(rules).map((rule) => {
-        return new Header(cb, rule.host, rule.key, rule.value, rule.enabled);
+        return {
+            host:    rule.host,
+            key:     rule.key,
+            value:   rule.value,
+            enabled: rule.enabled
+        }
     });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    let rules = [];
     let currentPageHost = '';
+
+    // noinspection JSUnresolvedReference,JSIgnoredPromiseFromCall
     browser.tabs.query({active: true, currentWindow: true}, (tabs) => {
         currentPageHost = new URL(tabs[0].url).hostname;
         console.log("[DEBUG] current page host", currentPageHost);
         render();
     });
 
-    const containerElem = document.getElementById('headersList');
-    const addRowElem = document.getElementById('addRow');
-    const portElem = document.getElementById('port');
-    const toggleAllElem = document.getElementById('toggleAll');
+    const headersElem = document.getElementById('headers'); // textarea
+    const portElem = document.getElementById('port');       // input
 
     let render = () => {
-        containerElem.innerHTML = ''
+        let text = '';
+        let rules = loadRules();
         rules.forEach((rule, idx) => {
             if (rule.host !== currentPageHost) {
                 return;
@@ -102,24 +48,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
             console.log("[DEBUG] rendering rule", idx, rule);
 
-            const btn = document.createElement('button');
-            btn.textContent = 'Remove';
-            btn.addEventListener('click', () => {
-                console.log("[DEBUG] deleting rule", idx, rule);
-                rules.splice(idx, 1);
-                render(); update(true);
-            })
-
-            const row = rule.row();
-            const cell = document.createElement('td');
-            cell.appendChild(btn);
-            row.appendChild(cell);
-
-            containerElem.appendChild(row);
+            // add plain text "key: value", if not enabled - add '#' prefix
+            text += `${rule.enabled ? '' : '#'}${rule.key}: ${rule.value}\n`;
         });
+        headersElem.value = text;
     }
 
-    let update = (force) => {
+    let update = (rules) => {
         console.log("[DEBUG] updating headers", rules);
         localStorage.setItem('rules', JSON.stringify(rules));
 
@@ -139,9 +74,10 @@ document.addEventListener("DOMContentLoaded", () => {
             req.push({host: host, add_headers: hosts[host]});
         }
 
-        if (req.length === 0 && !force) {
-            return;
-        }
+        // we still need to clear up headers if there are no rules
+        // if (req.length === 0) {
+        //     return;
+        // }
 
         console.log("[DEBUG] sending request", req);
         fetch(`http://localhost:${getPort()}/rules`, {
@@ -157,10 +93,42 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
 
-    addRowElem.addEventListener('click', () => {
-        console.log("[DEBUG] adding element", rules.length)
-        rules.push(new Header(update, currentPageHost, '', '', getDefaultChecked()));
-        render(); update(false);
+    let timeout = null;
+    headersElem.addEventListener('input', (e) => {
+        console.log("[DEBUG] input event, current timeout", timeout);
+        clearTimeout(timeout);
+        // do not update immediately, wait for user to finish typing
+        timeout = setTimeout(() => {
+            console.log("[DEBUG] headers change", e.target.value);
+
+            let lines = e.target.value.split('\n');
+            let rules = lines.map((line) => {
+                if (line.trim() === '') {
+                    return null;
+                }
+
+                let tokens = line.split(':');
+                if (tokens.length < 2) {
+                    return null;
+                }
+
+                let header = {
+                    host:    currentPageHost,
+                    key:     tokens[0].trim(),
+                    value:   tokens[1].trim(),
+                    enabled: true
+                };
+
+                if (line.startsWith('#')) {
+                    header.enabled = false;
+                    header.key = header.key.substring(1);
+                }
+
+                return header;
+            }).filter((rule) => rule !== null);
+
+            update(rules);
+        }, 500);
     });
 
     portElem.addEventListener('input', (e) => {
@@ -168,21 +136,9 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem('port', e.target.value);
     });
 
-    toggleAllElem.addEventListener('change', (e) => {
-        console.log("[DEBUG] toggle all", e.target.checked);
-        for (let i = 0; i < rules.length; i++) {
-            rules[i].enabled = e.target.checked;
-        }
-        render(); update(true);
-        localStorage.setItem('defaultChecked', e.target.checked);
-    });
-
     // setup
     portElem.value = getPort();
-    toggleAllElem.checked = getDefaultChecked();
-    rules = loadRules(update);
 
     console.log("[DEBUG] api server port: ", getPort());
     console.log("[DEBUG] check by default: ", getDefaultChecked());
-    console.log("[DEBUG] headers: ", rules);
 })
