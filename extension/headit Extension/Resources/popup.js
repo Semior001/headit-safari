@@ -1,13 +1,10 @@
-function getPort() {
-    let port = localStorage.getItem('port');
-    if (port === null || port === '') {
-        return '9096';
+function getAPIBaseURL() {
+    let baseURL = localStorage.getItem('apiBaseURL');
+    // if empty or not a valid URL, return default
+    if (baseURL === null || baseURL === '' || !baseURL.startsWith('http')) {
+        return `http://localhost:9096`;
     }
-    return port;
-}
-
-function getDefaultChecked() {
-    return localStorage.getItem('defaultChecked') === 'true';
+    return baseURL;
 }
 
 function loadRules() {
@@ -36,7 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     const headersElem = document.getElementById('headers'); // textarea
-    const portElem = document.getElementById('port');       // input
+    const apiBaseURLElem = document.getElementById('apiBaseURL');       // input
 
     let render = () => {
         let text = '';
@@ -75,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         console.log("[DEBUG] sending request", req);
-        fetch(`http://localhost:${getPort()}/rules`, {
+        fetch(`${getAPIBaseURL()}/rules`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(req)
@@ -126,14 +123,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 500);
     });
 
-    portElem.addEventListener('input', (e) => {
+    apiBaseURLElem.addEventListener('input', (e) => {
         console.log("[DEBUG] port change", e.target.value);
-        localStorage.setItem('port', e.target.value);
+        localStorage.setItem('apiBaseURL', e.target.value);
     });
 
     // setup
-    portElem.value = getPort();
-
-    console.log("[DEBUG] api server port: ", getPort());
-    console.log("[DEBUG] check by default: ", getDefaultChecked());
+    apiBaseURLElem.value = getAPIBaseURL();
+    console.log("[DEBUG] api server base URL:", getAPIBaseURL());
 })
