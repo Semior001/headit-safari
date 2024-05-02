@@ -52,10 +52,10 @@ func (p *Server) Run() error {
 		MITMConfig:     mitmCfg,
 		MITMExceptions: []string{"localhost"},
 		APIHost:        fmt.Sprintf("localhost:%d", p.ProxyPort),
-		OnRequest:      p.onRequest,
-		OnResponse:     p.onResponse,
+		OnRequest:      p.appendHeadersToRequest,
+		OnResponse:     p.appendHeadersToResponse,
 		OnError: func(se *gomitmproxy.Session, err error) {
-			log.Printf("[error][mitm][%s|%s] proxy error: %v", se.ID(), se.Request().URL, err)
+			log.Printf("[warn][mitm][%s|%s] proxy error: %v", se.ID(), se.Request().URL, err)
 		},
 	}
 
@@ -83,7 +83,7 @@ func (p *Server) Run() error {
 	return nil
 }
 
-func (p *Server) onRequest(se *gomitmproxy.Session) (*http.Request, *http.Response) {
+func (p *Server) appendHeadersToRequest(se *gomitmproxy.Session) (*http.Request, *http.Response) {
 	log.Printf("[debug][mitm][%s|%s] request: %s", se.ID(), se.Request().URL, se.Request().Method)
 
 	p.mu.RLock()
@@ -110,7 +110,7 @@ func (p *Server) onRequest(se *gomitmproxy.Session) (*http.Request, *http.Respon
 	return se.Request(), nil
 }
 
-func (p *Server) onResponse(se *gomitmproxy.Session) *http.Response {
+func (p *Server) appendHeadersToResponse(se *gomitmproxy.Session) *http.Response {
 	iface, ok := se.Ctx().GetProp("rule")
 	if !ok {
 		return nil

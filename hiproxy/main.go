@@ -14,7 +14,7 @@ import (
 	"time"
 
 	aglog "github.com/AdguardTeam/golibs/log"
-	"github.com/Semior001/headit-safari/proxy/proxy"
+	"github.com/Semior001/headit-safari/hiproxy/proxy"
 	"github.com/adrg/xdg"
 	"github.com/hashicorp/logutils"
 	"github.com/jessevdk/go-flags"

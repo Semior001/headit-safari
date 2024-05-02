@@ -107,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.addEventListener('click', () => {
                 console.log("[DEBUG] deleting rule", idx, rule);
                 rules.splice(idx, 1);
-                render(); update();
+                render(); update(true);
             })
 
             const row = rule.row();
@@ -119,7 +119,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    let update = () => {
+    let update = (force) => {
+        console.log("[DEBUG] updating headers", rules);
         localStorage.setItem('rules', JSON.stringify(rules));
 
         let hosts = {};
@@ -138,10 +139,11 @@ document.addEventListener("DOMContentLoaded", () => {
             req.push({host: host, add_headers: hosts[host]});
         }
 
-        if (req.length === 0) {
+        if (req.length === 0 && !force) {
             return;
         }
 
+        console.log("[DEBUG] sending request", req);
         fetch(`http://localhost:${getPort()}/rules`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -158,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
     addRowElem.addEventListener('click', () => {
         console.log("[DEBUG] adding element", rules.length)
         rules.push(new Header(update, currentPageHost, '', '', getDefaultChecked()));
-        render(); update();
+        render(); update(false);
     });
 
     portElem.addEventListener('input', (e) => {
@@ -171,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
         for (let i = 0; i < rules.length; i++) {
             rules[i].enabled = e.target.checked;
         }
-        render(); update();
+        render(); update(true);
         localStorage.setItem('defaultChecked', e.target.checked);
     });
 

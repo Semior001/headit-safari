@@ -1,9 +1,11 @@
-module github.com/Semior001/headit-safari/proxy
+module github.com/Semior001/headit-safari/hiproxy
 
-go 1.22.1
+go 1.22.2
+
+replace github.com/AdguardTeam/gomitmproxy => github.com/Semior001/gomitmproxy v0.0.0-20240502040357-637df0fa8f20
 
 require (
-	github.com/AdguardTeam/golibs v0.4.0
+	github.com/AdguardTeam/golibs v0.23.2
 	github.com/AdguardTeam/gomitmproxy v0.2.1
 	github.com/adrg/xdg v0.4.0
 	github.com/go-chi/cors v1.2.1
@@ -14,6 +16,6 @@ require (
 
 require (
 	github.com/pkg/errors v0.9.1 // indirect
-	golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359 // indirect
-	golang.org/x/text v0.3.2 // indirect
+	golang.org/x/sys v0.19.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 )

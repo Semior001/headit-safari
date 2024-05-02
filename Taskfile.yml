@@ -2,7 +2,28 @@ version: '3'
 
 tasks:
   install:
+    deps: [install/proxy]
 
+  build:
+    deps:
+      - build/extension/debug
+      - build/proxy
+
+  build/proxy:
+    desc: "build proxy server"
+    dir: hiproxy
+    cmd: |
+      HIPROXY_VERSION=$(git describe --tags --long)
+      echo $HIPROXY_VERSION
+      go build -ldflags "-X 'main.version=$HIPROXY_VERSION-local' -s -w" -o ./build/hiproxy ./...
+
+  install/proxy:
+    desc: "install proxy server"
+    dir: hiproxy
+    cmd: |
+      HIPROXY_VERSION=$(git describe --tags --long)
+      echo $HIPROXY_VERSION
+      go install -ldflags "-X 'main.version=$HIPROXY_VERSION-local' -s -w" ./...
 
   build/extension/debug:
     silent: true
