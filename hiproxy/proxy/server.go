@@ -63,7 +63,7 @@ func (p *Server) Run() error {
 	p.apiSrv = &http.Server{
 		Addr: fmt.Sprintf("localhost:%d", p.APIPort),
 		Handler: rest.Wrap(http.HandlerFunc(p.handleRulesRequest),
-			logger.New(logger.Prefix("[debug][API]"), logger.WithBody).Handler,
+			logger.New(logger.Prefix("[info][API]"), logger.WithBody).Handler,
 			cors.AllowAll().Handler,
 		),
 	}
