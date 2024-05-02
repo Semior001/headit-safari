@@ -74,11 +74,6 @@ document.addEventListener("DOMContentLoaded", () => {
             req.push({host: host, add_headers: hosts[host]});
         }
 
-        // we still need to clear up headers if there are no rules
-        // if (req.length === 0) {
-        //     return;
-        // }
-
         console.log("[DEBUG] sending request", req);
         fetch(`http://localhost:${getPort()}/rules`, {
             method: 'POST',
