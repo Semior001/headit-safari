@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -18,12 +19,14 @@ import (
 	"github.com/adrg/xdg"
 	"github.com/hashicorp/logutils"
 	"github.com/jessevdk/go-flags"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var opts struct {
-	APIPort   int  `long:"api-port"   env:"API_PORT"   description:"API port to listen on"   default:"9096"`
-	ProxyPort int  `long:"proxy-port" env:"PROXY_PORT" description:"Proxy port to listen on" default:"9095"`
-	Debug     bool `long:"debug"      env:"DEBUG"      description:"Turn on debug mode"`
+	APIPort   int    `long:"api-port"   env:"API_PORT"   description:"API port to listen on"   default:"9096"`
+	ProxyPort int    `long:"proxy-port" env:"PROXY_PORT" description:"Proxy port to listen on" default:"9095"`
+	Debug     bool   `long:"debug"      env:"DEBUG"      description:"Turn on debug mode"`
+	LogFile   string `long:"log-file"   env:"LOG_FILE" description:"Log file location, default at xdg config home"`
 }
 
 var version = "unknown"
@@ -42,13 +45,9 @@ func getVersion() string {
 }
 
 func main() {
-	_, _ = fmt.Fprintf(os.Stderr, "headit-safari-proxy, version %s\n", getVersion())
-
 	if _, err := flags.Parse(&opts); err != nil {
 		os.Exit(1)
 	}
-
-	setupLog(opts.Debug)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() { // catch signal and invoke graceful termination
@@ -58,6 +57,9 @@ func main() {
 		aglog.Info("received signal %v, shutting down", sig)
 		cancel()
 	}()
+
+	setupLog(ctx, opts.LogFile, opts.Debug)
+	log.Printf("[info] headit-safari, version: %s", getVersion())
 
 	if err := run(ctx); err != nil {
 		aglog.Error("failed to %v", err)
@@ -148,7 +150,9 @@ func load() (cert tls.Certificate, rules proxy.Rules, err error) {
 	return cert, rules, nil
 }
 
-func setupLog(dbg bool) {
+func setupLog(ctx context.Context, logFile string, dbg bool) {
+	lf := setupLogFile(ctx, logFile)
+
 	filter := &logutils.LevelFilter{
 		Levels:   []logutils.LogLevel{"debug", "info", "warn", "error"},
 		MinLevel: "info",
@@ -156,6 +160,9 @@ func setupLog(dbg bool) {
 	}
 
 	logFlags := log.Ldate | log.Ltime
+
+	// this is the level that is set for library's logger,
+	// further filtering is done by logutils
 	aglog.SetLevel(aglog.DEBUG)
 
 	if dbg {
@@ -164,5 +171,29 @@ func setupLog(dbg bool) {
 	}
 
 	log.SetFlags(logFlags)
-	log.SetOutput(filter)
+	log.SetOutput(io.MultiWriter(filter, lf))
+}
+
+func setupLogFile(ctx context.Context, loc string) io.Writer {
+	if loc == "" {
+		dirLoc := filepath.Join(xdg.ConfigHome, "headit")
+		if err := os.MkdirAll(dirLoc, 0755); err != nil && !os.IsExist(err) {
+			_, _ = fmt.Fprintf(os.Stderr, "failed to create config dir: %v\n", err)
+			return io.Discard
+		}
+		loc = filepath.Join(dirLoc, "headit.log")
+	}
+
+	lj := &lumberjack.Logger{
+		Filename:   loc,
+		LocalTime:  true,
+		MaxSize:    10, // MB
+		MaxBackups: 1,
+	}
+	go func() {
+		<-ctx.Done()
+		_ = lj.Close()
+	}()
+
+	return lj
 }

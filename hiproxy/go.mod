@@ -12,6 +12,7 @@ require (
 	github.com/go-pkgz/rest v1.19.0
 	github.com/hashicorp/logutils v1.0.0
 	github.com/jessevdk/go-flags v1.5.0
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
 require (
