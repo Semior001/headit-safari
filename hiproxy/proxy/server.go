@@ -52,7 +52,11 @@ func (p *Server) Run() error {
 		log.Printf("[warn] running in insecure mode, minimum for local TLS version is set to 1.0")
 		mitmCfg.SetTLSConfig(&tls.Config{
 			MinVersion: tls.VersionTLS10,
-			MaxVersion: tls.VersionTLS13,
+			NextProtos: []string{"http/1.1"},
+			// Accept client certs without verifying them
+			// Note that we will still verify remote server certs
+			// nolint:gosec
+			InsecureSkipVerify: true,
 		})
 	}
 
