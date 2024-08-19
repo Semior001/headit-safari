@@ -2,7 +2,7 @@ module github.com/Semior001/headit-safari/hiproxy
 
 go 1.22.2
 
-replace github.com/AdguardTeam/gomitmproxy => github.com/Semior001/gomitmproxy v0.0.0-20240502040357-637df0fa8f20
+replace github.com/AdguardTeam/gomitmproxy => github.com/Semior001/gomitmproxy v0.0.0-20240819114105-06c714dfa274
 
 require (
 	github.com/AdguardTeam/golibs v0.23.2

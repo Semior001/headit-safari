@@ -26,6 +26,7 @@ type Server struct {
 	ProxyPort   int
 	Version     string
 	Certificate tls.Certificate
+	Insecure    bool
 
 	mu     sync.RWMutex
 	proxy  *gomitmproxy.Proxy
@@ -45,6 +46,14 @@ func (p *Server) Run() error {
 	mitmCfg, err := mitm.NewConfig(x509c, privateKey, nil)
 	if err != nil {
 		return fmt.Errorf("make mitm config: %w", err)
+	}
+
+	if p.Insecure {
+		log.Printf("[warn] running in insecure mode, minimum for local TLS version is set to 1.0")
+		mitmCfg.SetTLSConfig(&tls.Config{
+			MinVersion: tls.VersionTLS10,
+			MaxVersion: tls.VersionTLS13,
+		})
 	}
 
 	cfg := gomitmproxy.Config{

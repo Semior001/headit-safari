@@ -25,8 +25,9 @@ import (
 var opts struct {
 	APIPort   int    `long:"api-port"   env:"API_PORT"   description:"API port to listen on"   default:"9096"`
 	ProxyPort int    `long:"proxy-port" env:"PROXY_PORT" description:"Proxy port to listen on" default:"9095"`
+	LogFile   string `long:"log-file"   env:"LOG_FILE"   description:"Log file location, default at xdg config home"`
+	Insecure  bool   `long:"insecure"   env:"INSECURE"   description:"Don't check TLS connections"`
 	Debug     bool   `long:"debug"      env:"DEBUG"      description:"Turn on debug mode"`
-	LogFile   string `long:"log-file"   env:"LOG_FILE" description:"Log file location, default at xdg config home"`
 }
 
 var version = "unknown"
@@ -76,6 +77,7 @@ func run(ctx context.Context) error {
 	p := proxy.Server{
 		APIPort:     opts.APIPort,
 		ProxyPort:   opts.ProxyPort,
+		Insecure:    opts.Insecure,
 		Version:     getVersion(),
 		Certificate: cert,
 	}

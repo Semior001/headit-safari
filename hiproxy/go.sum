@@ -1,7 +1,7 @@
 github.com/AdguardTeam/golibs v0.23.2 h1:rMjYantwtQ39e8G4zBQ6ZLlm4s3XH30Bc9VxhoOHwao=
 github.com/AdguardTeam/golibs v0.23.2/go.mod h1:o9i55Sx6v7qogRQeqaBfmLbC/pZqeMBWi015U5PTDY0=
-github.com/Semior001/gomitmproxy v0.0.0-20240502040357-637df0fa8f20 h1:ZSCyBBDcpsHRFnMhIDFRcnnbuVfrUnrcl2GDDSE7Wlk=
-github.com/Semior001/gomitmproxy v0.0.0-20240502040357-637df0fa8f20/go.mod h1:VsLJ+KLT0RsFfDSGGTt5xq/9ouoEpckYEjxl7rQ/RZ0=
+github.com/Semior001/gomitmproxy v0.0.0-20240819114105-06c714dfa274 h1:LZFvo2ZELGBP3h2f+v0PRdHxitAKwjBceUgCnt7G9I8=
+github.com/Semior001/gomitmproxy v0.0.0-20240819114105-06c714dfa274/go.mod h1:VsLJ+KLT0RsFfDSGGTt5xq/9ouoEpckYEjxl7rQ/RZ0=
 github.com/adrg/xdg v0.4.0 h1:RzRqFcjH4nE5C6oTAxhBtoE2IRyjBSa62SCbyPidvls=
 github.com/adrg/xdg v0.4.0/go.mod h1:N6ag73EX4wyxeaoeHctc1mas01KZgsj5tYiAIwqJE/E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
