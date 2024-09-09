@@ -91,15 +91,17 @@ func run(ctx context.Context) error {
 
 	<-ctx.Done()
 
+	defer func() {
+		if err = save(p.Rules()); err != nil {
+			log.Printf("[warn] failed to save rules: %v", err)
+		}
+	}()
+
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
 	if err = p.Close(shutdownCtx); err != nil {
 		return fmt.Errorf("close proxy: %w", err)
-	}
-
-	if err = save(p.Rules()); err != nil {
-		return fmt.Errorf("save config: %w", err)
 	}
 
 	return nil

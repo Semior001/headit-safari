@@ -147,12 +147,25 @@ func (p *Server) Close(ctx context.Context) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	p.proxy.Close()
 	if err := p.apiSrv.Shutdown(ctx); err != nil {
 		return fmt.Errorf("shutdown API server: %w", err)
 	}
 
-	return nil
+	// we don't want to wait for all connections to be properly closed,
+	// otherwise that's just frustrating
+	proxyClosed := make(chan struct{})
+	go func() {
+		p.proxy.Close()
+		close(proxyClosed)
+	}()
+
+	select {
+	case <-ctx.Done():
+		log.Printf("[warn] timed out waiting for proxy to close")
+		return nil
+	case <-proxyClosed:
+		return nil
+	}
 }
 
 // UpdateRules updates proxy rules.
