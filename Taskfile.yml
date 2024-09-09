@@ -12,10 +12,13 @@ tasks:
   build/proxy:
     desc: "build proxy server"
     dir: hiproxy
+    vars:
+      TARGET_DIR: ../build
     cmd: |
       HIPROXY_VERSION=$(git describe --tags --long)
       echo $HIPROXY_VERSION
-      go build -ldflags "-X 'main.version=$HIPROXY_VERSION-local' -s -w" -o ./build/hiproxy ./...
+      mkdir -p {{.TARGET_DIR}}
+      go build -ldflags "-X 'main.version=$HIPROXY_VERSION-local' -s -w" -o {{.TARGET_DIR}} ./...
 
   install/proxy:
     desc: "install proxy server"
@@ -30,11 +33,12 @@ tasks:
     dir: extension
     vars:
       ARTIFACTS_DIR: ../build/artifacts/extension
-      TARGET: ../build
+      TARGET_DIR: ../build
     cmds:
-      - rm -rf {{.TARGET}}
+      - rm -rf {{.TARGET_DIR}}/headit.app
       - mkdir -p {{.ARTIFACTS_DIR}}
+      - mkdir -p {{.TARGET_DIR}}
       - xcodebuild -scheme headit -configuration Debug -target headit -archivePath {{.ARTIFACTS_DIR}}/extension.xcarchive archive
       - xcodebuild -exportArchive -archivePath {{.ARTIFACTS_DIR}}/extension.xcarchive -exportOptionsPlist 'headit Extension/Info.plist' -exportPath {{.ARTIFACTS_DIR}}
-      - cp -r {{.ARTIFACTS_DIR}}/headit.app {{.TARGET}}
+      - cp -r {{.ARTIFACTS_DIR}}/headit.app {{.TARGET_DIR}}
 
